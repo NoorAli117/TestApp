@@ -7,148 +7,89 @@
 
 import Foundation
 import SwiftUI
+import Combine
+
+
 
 class MovieViewModel: ObservableObject {
-    @Published var movies: [Movie] = []
+    @Published var movies: [Movies] = []
+    @Published var movieDetail: Movie?
     
-    init() {
-        // Parse the JSON data and populate the 'movies' array
-        if let jsonData = jsonDataFromString {
-            do {
-                let movieList = try JSONDecoder().decode(MovieList.self, from: jsonData)
-                movies = movieList.movies
-            } catch {
-                print("Error decoding JSON: \(error)")
-            }
-        }
-    }
+    private var cancellables: Set<AnyCancellable> = []
     
-    
-    private var jsonDataFromString = """
-    {
-      "movies": [
-        {
-          "title": "Movie 1",
-          "director": "Director 1",
-          "year": 2020,
-          "image": "https://www.kasandbox.org/programming-images/avatars/spunky-sam.png"
-        },
-        {
-          "title": "Movie 2",
-          "director": "Director 2",
-          "year": 2019,
-          "image": "https://www.kasandbox.org/programming-images/avatars/spunky-sam-green.png"
-        },
-        {
-          "title": "Movie 3",
-          "director": "Director 3",
-          "year": 2018,
-          "image": "https://www.kasandbox.org/programming-images/avatars/purple-pi.png"
-        },
-        {
-          "title": "Movie 4",
-          "director": "Director 4",
-          "year": 2017,
-          "image": "https://www.kasandbox.org/programming-images/avatars/purple-pi-teal.png"
-        },
-        {
-          "title": "Movie 5",
-          "director": "Director 5",
-          "year": 2016,
-          "image": "https://www.kasandbox.org/programming-images/avatars/purple-pi-pink.png"
-        },
-        {
-          "title": "Movie 6",
-          "director": "Director 6",
-          "year": 2015,
-          "image": "https://www.kasandbox.org/programming-images/avatars/primosaur-ultimate.png"
-        },
-        {
-          "title": "Movie 7",
-          "director": "Director 7",
-          "year": 2014,
-          "image": "https://www.kasandbox.org/programming-images/avatars/primosaur-tree.png"
-        },
-        {
-          "title": "Movie 8",
-          "director": "Director 8",
-          "year": 2013,
-          "image": "https://www.kasandbox.org/programming-images/avatars/primosaur-sapling.png"
-        },
-        {
-          "title": "Movie 9",
-          "director": "Director 9",
-          "year": 2012,
-          "image": "https://www.kasandbox.org/programming-images/avatars/orange-juice-squid.png"
-        },
-        {
-          "title": "Movie 10",
-          "director": "Director 10",
-          "year": 2011,
-          "image": "https://www.kasandbox.org/programming-images/avatars/old-spice-man.png"
-        },
-        {
-          "title": "Movie 11",
-          "director": "Director 11",
-          "year": 2010,
-          "image": "https://www.kasandbox.org/programming-images/avatars/old-spice-man-blue.png"
-        },
-        {
-          "title": "Movie 12",
-          "director": "Director 12",
-          "year": 2009,
-          "image": "https://www.kasandbox.org/programming-images/avatars/mr-pants.png"
-        },
-        {
-          "title": "Movie 13",
-          "director": "Director 13",
-          "year": 2008,
-          "image": "https://www.kasandbox.org/programming-images/avatars/mr-pants-purple.png"
-        },
-        {
-          "title": "Movie 14",
-          "director": "Director 14",
-          "year": 2007,
-          "image": "https://www.kasandbox.org/programming-images/avatars/mr-pants-green.png"
-        },
-        {
-          "title": "Movie 15",
-          "director": "Director 15",
-          "year": 2006,
-          "image": "https://www.kasandbox.org/programming-images/avatars/marcimus.png"
-        },
-        {
-          "title": "Movie 16",
-          "director": "Director 16",
-          "year": 2005,
-          "image": "https://www.kasandbox.org/programming-images/avatars/marcimus-red.png"
-        },
-        {
-          "title": "Movie 17",
-          "director": "Director 17",
-          "year": 2004,
-          "image": "https://www.kasandbox.org/programming-images/avatars/marcimus-purple.png"
-        },
-        {
-          "title": "Movie 18",
-          "director": "Director 18",
-          "year": 2003,
-          "image": "https://www.kasandbox.org/programming-images/avatars/marcimus-orange.png"
-        },
-        {
-          "title": "Movie 19",
-          "director": "Director 19",
-          "year": 2002,
-          "image": "https://www.kasandbox.org/programming-images/avatars/duskpin-ultimate.png"
-        },
-        {
-          "title": "Movie 20",
-          "director": "Director 20",
-          "year": 2001,
-          "image": "https://www.kasandbox.org/programming-images/avatars/duskpin-tree.png"
-        }
-      ]
+    init(){
+        fetchPopularMovies()
     }
 
-""".data(using: .utf8)
+    func fetchPopularMovies() {
+        // Define the URL for the API request
+        let apiKey = "3df5973bb3bd6389fe5617a80a85c129"
+        let baseURL = "https://api.themoviedb.org/3/movie/popular"
+        guard var urlComponents = URLComponents(string: baseURL) else {
+            return
+        }
+
+        urlComponents.queryItems = [URLQueryItem(name: "api_key", value: apiKey)]
+
+        guard let url = urlComponents.url else {
+            return
+        }
+
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: MoviesList.self, decoder: JSONDecoder())
+            .map(\.results)
+            .replaceError(with: [])
+            .receive(on: DispatchQueue.main)
+            .sink(receiveValue: { [weak self] movies in
+                self?.movies = movies
+            })
+            .store(in: &cancellables)
+    }
+    
+    
+    func fetchMovieDetail(movieID: Int) {
+        // Define the URL for the API request
+        let apiKey = "3df5973bb3bd6389fe5617a80a85c129"
+        let baseURL = "https://api.themoviedb.org/3/movie/\(movieID)"
+        
+        guard var urlComponents = URLComponents(string: baseURL) else {
+            print("Invalid URL")
+            return
+        }
+        
+        urlComponents.queryItems = [URLQueryItem(name: "api_key", value: apiKey)]
+        
+        guard let url = urlComponents.url else {
+            print("Invalid URL")
+            return
+        }
+        
+        // Create a URLSession data task to make the GET request
+        let session = URLSession.shared
+        let task = session.dataTask(with: url) { (data, response, error) in
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+            
+            if let data = data {
+                do {
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let movieDetail = try decoder.decode(Movie.self, from: data)
+                    DispatchQueue.main.async { [weak self] in
+                        self?.movieDetail = movieDetail
+                        print("movieDetail: \(movieDetail)")
+                    }
+                } catch {
+                    print("Error decoding JSON: \(error)")
+                }
+            } else {
+                print("No data received")
+            }
+        }
+        
+        task.resume()
+    }
 }

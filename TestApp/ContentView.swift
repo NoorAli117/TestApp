@@ -11,6 +11,7 @@ import SwiftUI
 struct ContentView: View {
     
     @ObservedObject var movieViewModel = MovieViewModel()
+    @State var viewedMovieInfo: Movies?
     
     // State variable to hold the search query
         @State private var searchText = ""
@@ -28,23 +29,36 @@ struct ContentView: View {
         NavigationView {
             VStack {
                 // Search Bar
-                SearchBar(text: $searchText)
-                
-                // Movie List
-                List(filteredMovies, id: \.title) { movie in
-                    NavigationLink(destination: MovieCard(movie: movie)) {
-                        HStack {
-                            URLImage(URL(string: movie.posterPath!)!) { proxy in
-                                proxy.image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 50, height: 50) // Adjust the size as needed
+                if isInternetAvailable() {
+                    SearchBar(text: $searchText)
+                    
+                    // Movie List
+                    List(filteredMovies, id: \.title) { movie in
+                        NavigationLink(destination: MovieCard(movie: movie)) {
+                            HStack {
+                                URLImage(URL(string: movie.posterPath!)!) { proxy in
+                                    proxy.image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 50, height: 50) // Adjust the size as needed
+                                }
+                                Text(movie.title!)
                             }
-                            Text(movie.title!)
+                            .onTapGesture {
+                                // Store the last viewed information when it's available
+                                UserDefaults.standard.set(movie.title, forKey: "lastViewedInfo")
+                            }
                         }
                     }
+                    .listStyle(PlainListStyle())
+                }else {
+                    if let lastViewedInfo = UserDefaults.standard.string(forKey: "lastViewedInfo") {
+                        Text("Last Viewed Movie")
+                        Text("\(lastViewedInfo)")
+                    } else {
+                        Text("No internet connection, and no last viewed information available.")
+                    }
                 }
-                .listStyle(PlainListStyle())
             }
             .navigationTitle("Movie List")
         }
@@ -103,6 +117,11 @@ struct MovieCard: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
+                    // Overview
+                    Text("Overview: \(movieViewModel.movieDetail?.overview ?? "N/A")")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
                     // Original Language
                     Text("Original Language: \(movieViewModel.movieDetail?.originalLanguage ?? "N/A")")
                         .font(.subheadline)
@@ -120,11 +139,6 @@ struct MovieCard: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    
-                    // Overview
-                    Text("Overview: \(movieViewModel.movieDetail?.overview ?? "N/A")")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
                     
                     // Adult
                     Text("Adult: \(movieViewModel.movieDetail?.adult ?? false ? "YES" : "NO")")

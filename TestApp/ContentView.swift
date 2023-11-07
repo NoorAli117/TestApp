@@ -53,8 +53,21 @@ struct ContentView: View {
                     .listStyle(PlainListStyle())
                 }else {
                     if let lastViewedInfo = UserDefaults.standard.string(forKey: "lastViewedInfo") {
-                        Text("Last Viewed Movie")
-                        Text("\(lastViewedInfo)")
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Last Viewed Movie")
+                                .font(.headline) // Customize the font style and size as needed
+                                .foregroundColor(.primary)
+                            
+                            Text("\(lastViewedInfo)")
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                        }
+                        .padding(10)
+                        .background(Color.white)
+                        .cornerRadius(15)
+                        .shadow(radius: 5)
+                        .padding(10)
+
                     } else {
                         Text("No internet connection, and no last viewed information available.")
                     }

@@ -36,12 +36,12 @@ struct ContentView: View {
                     List(filteredMovies, id: \.title) { movie in
                         NavigationLink(destination: MovieCard(movie: movie)) {
                             HStack {
-                                URLImage(URL(string: movie.posterPath!)!) { proxy in
-                                    proxy.image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 50, height: 50) // Adjust the size as needed
-                                }
+                                // URLImage(URL(string: movie.posterPath!)!) { proxy in
+                                //     proxy.image
+                                //         .resizable()
+                                //         .aspectRatio(contentMode: .fit)
+                                //         .frame(width: 50, height: 50)
+                                // }
                                 Text(movie.title!)
                             }
                             .onTapGesture {
@@ -55,7 +55,7 @@ struct ContentView: View {
                     if let lastViewedInfo = UserDefaults.standard.string(forKey: "lastViewedInfo") {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Last Viewed Movie")
-                                .font(.headline) // Customize the font style and size as needed
+                                .font(.headline)
                                 .foregroundColor(.primary)
                             
                             Text("\(lastViewedInfo)")
@@ -78,11 +78,11 @@ struct ContentView: View {
     }
 }
 
-extension View {
-    func add(searchBar text: Binding<String>) -> some View {
-        overlay(SearchBar(text: text).frame(width: 250, height: 30).padding(), alignment: .top)
-    }
-}
+// extension View {
+//     func add(searchBar text: Binding<String>) -> some View {
+//         overlay(SearchBar(text: text).frame(width: 250, height: 30).padding(), alignment: .top)
+//     }
+// }
 
 struct SearchBar: View {
     @Binding var text: String
